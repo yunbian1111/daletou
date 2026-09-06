@@ -3,235 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大乐透智能预测助手 (终极版)</title>
+    <title>智能大乐透数据分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; color: #333; padding: 20px; max-width: 600px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { font-size: 24px; color: #d32f2f; margin-bottom: 5px; }
-        .header p { font-size: 14px; color: #666; }
-        .mode-tabs { display: flex; background: #fff; border-radius: 8px; overflow: hidden; margin-bottom: 20px; border: 1px solid #ddd; }
-        .tab { flex: 1; padding: 12px 0; text-align: center; font-size: 14px; font-weight: bold; cursor: pointer; background: #fff; color: #666; }
-        .tab.active { background: #d32f2f; color: #fff; }
-        .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .number-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; justify-content: center; }
-        .ball { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 16px; }
-        .red { background-color: #d32f2f; }
-        .blue { background-color: #1976d2; }
-        .btn { display: block; width: 100%; padding: 15px; background-color: #d32f2f; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
-        .btn:hover { background-color: #b71c1c; }
-        .analysis-title { font-size: 16px; color: #1976d2; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-        .analysis-title::before { content: '📊'; font-size: 18px; }
-        .logic-list { font-size: 13px; color: #555; line-height: 1.6; padding-left: 20px; margin: 0; }
-        .set-title { font-weight: bold; color: #d32f2f; margin-bottom: 10px; font-size: 14px; }
-        .dan-tuo-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; box-sizing: border-box; font-size: 14px; }
-        .info-box { font-size: 13px; color: #666; margin-bottom: 10px; background: #fafafa; padding: 10px; border-radius: 6px;}
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f5f7fa; color: #333; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #d9534f; margin-bottom: 30px; }
+        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .latest-period { font-size: 1.1em; font-weight: bold; color: #333; }
+        .controls { display: flex; gap: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95em; color: #fff; transition: all 0.2s; }
+        .btn-mode { background-color: #337ab7; }
+        .btn-gen { background-color: #5cb85c; }
+        .btn:hover { opacity: 0.8; }
+        .chart-container { position: relative; height: 400px; width: 100%; margin-top: 20px; }
+        .analysis-box { padding: 15px; background: #f9f9f9; border-radius: 8px; border-left: 5px solid #5cb85c; margin-top: 20px; }
+        .ball-container { display: flex; gap: 5px; margin-top: 10px; }
+        .ball { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 0.9em; }
+        .red { background-color: #d9534f; }
+        .blue { background-color: #337ab7; }
+        .loading { text-align: center; padding: 40px; color: #999; font-size: 1.2em; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1>智能大乐透数据分析</h1>
+        
+        <div class="card">
+            <div class="header-info">
+                <div class="latest-period" id="period-display">正在获取最新期数...</div>
+                <div class="controls">
+                    <button class="btn btn-mode" id="mode-btn" onclick="switchMode()">切换到：排除模式</button>
+                </div>
+            </div>
+            
+            <div class="controls" style="justify-content: flex-end; margin-bottom: 10px;">
+                <button class="btn btn-gen" onclick="generateSingle()">生成单注</button>
+                <button class="btn btn-gen" onclick="generateMulti()">生成5注</button>
+            </div>
+            <div id="result-area" class="hidden"></div>
 
-    <div class="header">
-        <h1>大乐透智能预测助手 (终极版)</h1>
-        <p>支持单注、套票、胆拖玩法，智能算法辅助选号</p >
-    </div>
-
-    <!-- 模式切换 -->
-    <div class="mode-tabs">
-        <div class="tab active" data-mode="single">普通单注</div>
-        <div class="tab" data-mode="multi">多注套票</div>
-        <div class="tab" data-mode="dantuo">胆拖玩法</div>
-    </div>
-
-    <!-- 预测号码展示区 -->
-    <div class="card">
-        <h3 class="analysis-title">智能预测号码</h3>
-        <div id="numbers-container" class="number-row">
-            <!-- 号码将在这里生成 -->
-            <div style="color: #999; font-size: 14px;">请选择模式并生成号码...</div>
+            <div id="loading-spinner" class="loading">⏳ 数据加载中，请稍候...</div>
+            
+            <div class="chart-container hidden" id="chart-wrapper">
+                <canvas id="myChart"></canvas>
+            </div>
+            
+            <div id="analysis-text" class="analysis-box hidden"></div>
         </div>
-        <div id="dantuo-input-area" style="display: none;">
-            <h3 class="analysis-title">胆拖参数输入</h3>
-            <input type="text" id="dan-input" class="dan-tuo-input" placeholder="请输入胆码 (1-4个，用空格分隔，如：05 12)">
-            <input type="text" id="tuo-input" class="dan-tuo-input" placeholder="请输入拖码 (2个以上，用空格分隔，如：01 08 15 22)">
-            <input type="text" id="hou-input" class="dan-tuo-input" placeholder="请输入后区胆码 (1-2个，用空格分隔)">
-            <p class="info-box">输入范围：前区 01-35，后区 01-12。留空则由系统随机补充。</p >
-        </div>
-        <button class="btn" id="generate-btn">重新生成</button>
-    </div>
-
-    <!-- 选号逻辑分析区 -->
-    <div class="card">
-        <h3 class="analysis-title">选号逻辑</h3>
-        <ol class="logic-list" id="logic-text">
-            <li>区间分布：系统将根据历史数据，自动平衡小、中、大三个区间的号码分布。</li>
-            <li>冷热搭配：结合近30期热度，智能推荐冷热号组合。</li>
-            <li>奇偶比例：自动优化奇偶比，使其更符合历史常态形态。</li>
-            <li>排除策略：过滤掉近期过热或过冷的极端号码。</li>
-        </ol>
     </div>
 
 <script>
-    // 工具函数：生成指定范围内的随机整数
-    function getRandomInt(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+    let currentMode = 'trend'; // 当前模式：trend(趋势) 或 exclude(排除)
+    let chart = null;
 
-    // 工具函数：从数组中随机获取N个不重复的元素
-    function getRandomItems(arr, n) {
-        let tempArr = [...arr];
-        let result = [];
-        for (let i = 0; i < n; i++) {
-            let index = Math.floor(Math.random() * tempArr.length);
-            result.push(tempArr[index]);
-            tempArr.splice(index, 1);
-        }
-        return result.sort((a, b) => a - b);
-    }
-
-    // 格式化数字，补零
-    function formatNumber(num) {
-        return num < 10 ? '0' + num : num;
-    }
-
-    // 生成单注号码
-    function generateSingleSet() {
-        const redAll = Array.from({length: 35}, (_, i) => i + 1);
-        const blueAll = Array.from({length: 12}, (_, i) => i + 1);
-        const reds = getRandomItems(redAll, 5);
-        const blues = getRandomItems(blueAll, 2);
-        return { reds, blues };
-    }
-
-    // 生成多注套票
-    function generateMultiSets(count) {
-        let sets = [];
-        for (let i = 0; i < count; i++) {
-            sets.push(generateSingleSet());
-        }
-        return sets;
-    }
-
-    // 解析用户输入的号码
-    function parseUserNumbers(inputStr, min, max) {
-        if (!inputStr || inputStr.trim() === '') return [];
-        let nums = inputStr.trim().split(/\s+/).map(Number).filter(n => n >= min && n <= max && !isNaN(n));
-        return [...new Set(nums)]; // 去重
-    }
-
-    // 胆拖生成逻辑 (简化版，演示前区胆拖)
-    function generateDanTuo() {
-        const danStr = document.getElementById('dan-input').value;
-        const tuoStr = document.getElementById('tuo-input').value;
-        const houStr = document.getElementById('hou-input').value;
-
-        const dan = parseUserNumbers(danStr, 1, 35);
-        const tuo = parseUserNumbers(tuoStr, 1, 35);
-        const hou = parseUserNumbers(houStr, 1, 12);
-
-        if (dan.length > 4) { alert("前区胆码不能超过4个！"); return []; }
-        if (tuo.length < 2) { alert("前区拖码至少需要2个！"); return []; }
-        if (hou.length > 2) { alert("后区号码不能超过2个！"); return []; }
-
-        // 过滤掉拖码中已经包含在胆码里的数字
-        const filteredTuo = tuo.filter(n => !dan.includes(n));
-
-        // 胆码 + 从拖码中选 (5 - 胆码数量)
-        const neededFromTuo = 5 - dan.length;
-        if (filteredTuo.length < neededFromTuo) { alert(`拖码数量不足，还需要 ${neededFromTuo - filteredTuo.length} 个拖码！`); return []; }
-
-        let finalReds = [...dan, ...getRandomItems(filteredTuo, neededFromTuo)].sort((a, b) => a - b);
-        
-        let finalBlues = [];
-        if (hou.length === 2) {
-            finalBlues = hou.sort((a, b) => a - b);
-        } else if (hou.length === 1) {
-            const blueAll = Array.from({length: 12}, (_, i) => i + 1).filter(n => n !== hou[0]);
-            finalBlues = [hou[0], ...getRandomItems(blueAll, 1)].sort((a, b) => a - b);
-        } else {
-            finalBlues = getRandomItems(Array.from({length: 12}, (_, i) => i + 1), 2);
-        }
-
-        return [{ reds: finalReds, blues: finalBlues }];
-    }
-
-    // 渲染号码到页面
-    function renderNumbers(sets) {
-        const container = document.getElementById('numbers-container');
-        container.innerHTML = '';
-        
-        sets.forEach((set, index) => {
-            if (sets.length > 1) {
-                const title = document.createElement('div');
-                title.className = 'set-title';
-                title.textContent = `第 ${index + 1} 注`;
-                container.appendChild(title);
-            }
-
-            const row = document.createElement('div');
-            row.className = 'number-row';
-            
-            set.reds.forEach(num => {
-                const ball = document.createElement('div');
-                ball.className = 'ball red';
-                ball.textContent = formatNumber(num);
-                row.appendChild(ball);
-            });
-            set.blues.forEach(num => {
-                const ball = document.createElement('div');
-                ball.className = 'ball blue';
-                ball.textContent = formatNumber(num);
-                row.appendChild(ball);
-            });
-            
-            container.appendChild(row);
-        });
-    }
-
-    // 交互逻辑
-    document.addEventListener('DOMContentLoaded', () => {
-        const tabs = document.querySelectorAll('.tab');
-        const btn = document.getElementById('generate-btn');
-        const dantuoInputArea = document.getElementById('dantuo-input-area');
-        let currentMode = 'single';
-
-        // 切换模式
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentMode = tab.dataset.mode;
-
-                if (currentMode === 'dantuo') {
-                    dantuoInputArea.style.display = 'block';
-                    btn.textContent = '生成胆拖组合';
-                } else if (currentMode === 'multi') {
-                    dantuoInputArea.style.display = 'none';
-                    btn.textContent = '生成 5 注套票';
-                } else {
-                    dantuoInputArea.style.display = 'none';
-                    btn.textContent = '重新生成';
-                }
-            });
-        });
-
-        // 点击生成按钮
-        btn.addEventListener('click', () => {
-            let sets = [];
-            if (currentMode === 'single') {
-                sets.push(generateSingleSet());
-            } else if (currentMode === 'multi') {
-                sets = generateMultiSets(5);
-            } else if (currentMode === 'dantuo') {
-                sets = generateDanTuo();
-            }
-
-            if (sets.length > 0) {
-                renderNumbers(sets);
-            }
-        });
-
-        // 初始化生成一组
-        renderNumbers([generateSingleSet()]);
+    // 网页加载完成后立即获取真实数据
+    window.addEventListener('load', () => {
+        fetchRealData();
     });
+
+    // 核心：读取GitHub仓库中的真实data.json
+    async function fetchRealData() {
+        try {
+            const response = await fetch('data.json');
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            
+            document.getElementById('period-display').innerText = `最新期数：${data.period}`;
+            document.getElementById('loading-spinner').classList.add('hidden');
+            document.getElementById('chart-wrapper').classList.remove('hidden');
+            document.getElementById('analysis-text').classList.remove('hidden');
+            
+            renderChartAndAnalysis(data);
+        } catch (error) {
+            document.getElementById('loading-spinner').innerText = `❌ 数据加载失败：${error.message}`;
+        }
+    }
+
+    // 渲染图表和分析文字
+    function renderChartAndAnalysis(data) {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        
+        // 销毁旧图表，防止重影
+        if (chart) chart.destroy();
+
+        if (currentMode === 'trend') {
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.chartLabels,
+                    datasets: [{
+                        label: '近30期号码趋势',
+                        data: data.chartData,
+                        borderColor: '#d9534f',
+                        backgroundColor: 'rgba(217, 83, 79, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+            document.getElementById('analysis-text').innerHTML = `
+                <strong>📊 号码趋势分析</strong><br>
+                根据最近30期开奖数据，前区号码呈现较为明显的波动走势。近期热码集中在 ${data.hotNumbers.join(', ')}，冷码为 ${data.coldNumbers.join(', ')}。
+            `;
+        } else {
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.excludeLabels,
+                    datasets: [{
+                        label: '号码历史频次',
+                        data: data.excludeData,
+                        backgroundColor: '#5cb85c'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+            document.getElementById('analysis-text').innerHTML = `
+                <strong>🚫 号码排除分析</strong><br>
+                结合历史频次与近期形态，建议本期排除出现频次极高的号码：${data.excludeNumbers.join(', ')}，以及长期未出的极冷码：${data.deadNumbers.join(', ')}。
+            `;
+        }
+    }
+
+    // 切换趋势/排除模式
+    window.switchMode = function() {
+        currentMode = currentMode === 'trend' ? 'exclude' : 'trend';
+        document.getElementById('mode-btn').innerText = 
+            currentMode === 'trend' ? '切换到：排除模式' : '切换到：趋势模式';
+        fetchRealData(); // 重新获取数据并渲染
+    };
+
+    // 大乐透随机生成辅助函数
+    function generateLottoNumbers() {
+        const redBalls = Array.from({length: 35}, (_, i) => i + 1);
+        const blueBalls = Array.from({length: 12}, (_, i) => i + 1);
+        
+        const pickRed = [];
+        for(let i=0; i<5; i++) {
+            const index = Math.floor(Math.random() * redBalls.length);
+            pickRed.push(redBalls.splice(index, 1)[0]);
+        }
+        const pickBlue = [];
+        for(let i=0; i<2; i++) {
+            const index = Math.floor(Math.random() * blueBalls.length);
+            pickBlue.push(blueBalls.splice(index, 1)[0]);
+        }
+        return { red: pickRed.sort((a,b)=>a-b), blue: pickBlue.sort((a,b)=>a-b) };
+    }
+
+    // 生成单注
+    window.generateSingle = function() {
+        const resultArea = document.getElementById('result-area');
+        const nums = generateLottoNumbers();
+        
+        let html = '<div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px dashed #eee;">';
+        nums.red.forEach(n => html += `<span class="ball red">${n}</span>`);
+        nums.blue.forEach(n => html += `<span class="ball blue">${n}</span>`);
+        html += '</div>';
+        
+        resultArea.innerHTML += html;
+        resultArea.classList.remove('hidden');
+    };
+
+    // 生成多注（5注）
+    window.generateMulti = function() {
+        for(let i=0; i<5; i++) {
+            generateSingle();
+        }
+    };
 </script>
 </body>
 </html>
